@@ -1,5 +1,5 @@
 # update-ubuntu
-Minhas preferências de atualizações
+Minhas preferências de atualizações no Ubuntu.
 
 ---
 # Script de Atualização Completa do Sistema
@@ -75,19 +75,3 @@ O script irá executar as seguintes etapas:
 - Realizar a limpeza de pacotes e cache do APT
 - Exibir métricas e estatísticas da atualização
 - Informar se o sistema requer reinicialização
-
-## Observações
-
-- **Interatividade e Logs:**  
-  As mensagens do script serão exibidas no terminal. Em ambientes automatizados, é recomendado redirecionar a saída para um arquivo de log se necessário.
-
-- **Personalizações:**  
-  Você pode modificar as funções de exibição, os tempos de espera e a quantidade de tentativas (através dos parâmetros da função `try_step`) conforme suas necessidades.
-
-- **Integração com Cloud-Init:**  
-  Se você utiliza o arquivo YAML de instalação automatizada do Ubuntu, o script é criado e executado automaticamente na primeira inicialização. Verifique a seção `runcmd` do arquivo YAML para mais detalhes.
-
-## Conclusão
-
-Este script foi desenvolvido para oferecer uma atualização completa e monitorada do sistema, permitindo uma manutenção consistente e facilitada. Se você encontrar problemas ou tiver sugestões de melhorias, sinta-se à vontade para contribuir ou ajustar conforme necessário.
-```
