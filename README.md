@@ -75,3 +75,19 @@ O script irá executar as seguintes etapas:
 - Realizar a limpeza de pacotes e cache do APT
 - Exibir métricas e estatísticas da atualização
 - Informar se o sistema requer reinicialização
+
+### 4. Tornar Script Universal e executável
+
+# a. Salvar o script (ex.: ubuntu_update.sh)
+# b. Tornar executável
+chmod +x ubuntu_update.sh
+
+# c. Criar o diretório de log, se necessário
+mkdir -p ~/ubuntu/logs
+
+# d. Executar o script
+./ubuntu_update.sh
+
+# f. (Opcional) Mover para /usr/local/bin para acesso global
+sudo mv ubuntu_update.sh /usr/local/bin/ubuntu_update
+
