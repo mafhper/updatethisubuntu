@@ -31,7 +31,7 @@ sistema-manutencao/
 
 1. Crie um ambiente virtual Python:
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
 ```
 
