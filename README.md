@@ -1,93 +1,75 @@
-# update-ubuntu
-Minhas preferências de atualizações no Ubuntu.
+# Script de Atualização Completa do Ubuntu
 
----
-# Script de Atualização Completa do Sistema
+Este script Bash automatiza o processo de atualização completa de um sistema Ubuntu, incluindo atualizações de pacotes APT, Snap e Flatpak, além de realizar limpezas para otimizar o sistema. Ele fornece feedback visual com cores no terminal, registra todas as operações em um arquivo de log e exibe um resumo das métricas de atualização ao final.
 
-Este repositório contém um script de atualização completo para sistemas Ubuntu, projetado para automatizar diversas tarefas de manutenção, tais como:
+## Funcionalidades
 
-- Atualização da lista de pacotes e upgrades do sistema
-- Realização de dist-upgrade
-- Atualização de aplicativos instalados via Flatpak (se disponível)
-- Limpeza de pacotes não utilizados e cache do APT
-- Exibição de métricas e estatísticas da atualização (tempo total, dados baixados, espaço liberado)
-- Mensagens coloridas para facilitar a visualização e identificação do status das operações
-
-## Recursos do Script
-
-- **Cores e Mensagens:**  
-  O script utiliza cores para diferenciar os tipos de mensagens:
-  - **Azul:** Status e informações gerais
-  - **Verde:** Mensagens de sucesso
-  - **Vermelho:** Mensagens de erro
-  - **Amarelo:** Avisos
-  - **Ciano e Magenta:** Outras informações e métricas
-
-- **Medição de Métricas:**  
-  São calculados os dados baixados (através da verificação do tamanho do cache APT e do repositório Flatpak) e o espaço liberado após a limpeza.
-
-- **Tolerância a Falhas:**  
-  O script utiliza uma função `try_step` que permite múltiplas tentativas para cada etapa, caso ocorra alguma falha durante a execução de comandos.
-
-- **Compatibilidade com Flatpak:**  
-  Antes de tentar atualizar aplicativos via Flatpak, o script verifica se o Flatpak está instalado e exibe uma mensagem de aviso caso não esteja.
+*   **Atualização Abrangente:** Atualiza pacotes APT (incluindo `update`, `upgrade`, `dist-upgrade`), Snap e Flatpak.
+*   **Verificações Iniciais:**
+    *   Verifica a conexão com a internet antes de iniciar as atualizações.
+    *   Verifica se há espaço em disco suficiente para evitar falhas durante a atualização.
+    *   Verifica se `flatpak` e `snap` estão instalados e prossegue com as atualizações apenas se estiverem presentes.
+*   **Tratamento de Erros e Retentativas:** Implementa um sistema de retentativas para comandos que podem falhar temporariamente devido a problemas de rede ou servidores ocupados.
+*   **Timeout para Comandos:** Define um timeout para cada etapa para evitar que o script fique travado indefinidamente.
+*   **Registro Detalhado (Logging):** Registra todas as ações, sucessos, erros e avisos em um arquivo de log (`~/.system-update.log`) para auditoria e diagnóstico.
+*   **Métricas de Atualização:** Coleta e exibe métricas como tempo total de atualização, quantidade de dados baixados, espaço em disco liberado e número de erros encontrados.
+*   **Feedback Visual Colorido:** Utiliza cores no terminal para destacar status, sucessos, erros, avisos e informações importantes, tornando a execução do script mais informativa e agradável visualmente.
+*   **Limpeza do Sistema:** Realiza limpeza de pacotes desnecessários (`apt autoremove`) e cache de pacotes (`apt clean`) para liberar espaço em disco após a atualização.
+*   **Verificação de Reinicialização Necessária:** Detecta se uma reinicialização do sistema é necessária após as atualizações e avisa o usuário.
+*   **Segurança:** Usa `sudo` apenas quando necessário para operações administrativas.
 
 ## Pré-requisitos
 
-- Sistema operacional: Ubuntu (ou distribuições baseadas em Ubuntu)
-- Permissões de `sudo` para a execução dos comandos de atualização e limpeza
-- (Opcional) Flatpak instalado, caso você utilize aplicativos via Flatpak
+*   Sistema operacional Ubuntu (ou derivado).
+*   Conexão com a internet.
+*   Acesso `sudo` para executar comandos administrativos.
+*   Opcional: `flatpak` e `snap` instalados para atualização desses pacotes.
 
-## Instalação e Execução
+## Como Usar
 
-### 1. Criação do Script
+1.  **Baixe o script:**
+    Você pode baixar o script diretamente do GitHub ou usar `wget` ou `curl`:
 
-O script pode ser criado manualmente ou por meio de um arquivo de configuração do **cloud-init** (como demonstrado no arquivo YAML de instalação automatizada). Para criar o script manualmente:
+    ```bash
+    wget https://raw.githubusercontent.com/<seu-usuario>/<seu-repositorio>/main/seu-script-de-atualizacao.sh -O atualizar-ubuntu.sh
+    # ou
+    curl -o atualizar-ubuntu.sh https://raw.githubusercontent.com/<seu-usuario>/<seu-repositorio>/main/seu-script-de-atualizacao.sh
+    ```
+    Substitua `<seu-usuario>` e `<seu-repositorio>` pelo seu nome de usuário e nome do repositório no GitHub, e `seu-script-de-atualizacao.sh` pelo nome do arquivo do seu script.
 
-```bash
-sudo nano /usr/local/bin/update_script.sh
-```
+2.  **Torne o script executável:**
+    ```bash
+    chmod +x atualizar-ubuntu.sh
+    ```
 
-Cole o conteúdo do script de atualização (conforme disponibilizado no arquivo YAML ou em outro local) e salve o arquivo.
+3.  **Execute o script:**
+    ```bash
+    ./atualizar-ubuntu.sh
+    ```
 
-### 2. Tornar o Script Executável
+    Você precisará inserir sua senha de `sudo` quando solicitado.
 
-Após criar o script, torne-o executável:
+## Logs
 
-```bash
-sudo chmod +x /usr/local/bin/update_script.sh
-```
+Todas as operações do script são registradas no arquivo `~/.system-update.log`. Este arquivo contém informações detalhadas sobre cada etapa da atualização, incluindo horários, status, sucessos, erros e avisos. Em caso de problemas, consulte este log para obter mais detalhes.
 
-### 3. Execução do Script
+## Considerações Importantes
 
-Para executar o script manualmente, utilize o seguinte comando:
+*   **Conexão com a Internet:** Uma conexão de internet estável é essencial para o script funcionar corretamente. O script verifica a conectividade antes de iniciar, mas certifique-se de que sua conexão seja confiável durante todo o processo de atualização.
+*   **Espaço em Disco:** Certifique-se de ter espaço em disco suficiente antes de executar o script, especialmente na partição raiz (`/`). O script verifica se há pelo menos 1GB de espaço livre, mas mais espaço pode ser necessário dependendo do tamanho das atualizações.
+*   **Tempo de Execução:** O tempo de execução do script pode variar dependendo da velocidade da sua internet, da quantidade de atualizações disponíveis e do desempenho do seu sistema. Seja paciente e não interrompa o script durante a execução, a menos que seja absolutamente necessário.
+*   **Pacotes Retidos (Held):** O script avisa sobre pacotes retidos durante a atualização do APT. Pacotes retidos podem indicar problemas de dependência ou configurações específicas que impedem a atualização automática. Investigue pacotes retidos manualmente se o script avisar sobre eles.
+*   **Reinicialização:** Se o script indicar que uma reinicialização é necessária, é altamente recomendável reiniciar o sistema para aplicar completamente todas as atualizações, especialmente as do kernel ou bibliotecas importantes.
 
-```bash
-sudo /usr/local/bin/update_script.sh
-```
+## Customização
 
-O script irá executar as seguintes etapas:
+*   **Arquivo de Log:** O arquivo de log é salvo por padrão em `~/.system-update.log`. Você pode modificar a variável `UPDATE_LOG` no script para alterar o local do arquivo de log, se desejar.
+*   **Retentativas e Timeout:** As variáveis `MAX_RETRIES` e `RETRY_DELAY` dentro da função `try_step` podem ser ajustadas para modificar o comportamento de retentativas do script. O `timeout` de 300 segundos (5 minutos) para cada comando também pode ser alterado na função `try_step`.
 
-- Atualizar a lista de pacotes
-- Recarregar os serviços do systemd
-- Realizar upgrade e dist-upgrade dos pacotes instalados
-- Atualizar aplicativos via Flatpak (se aplicável)
-- Realizar a limpeza de pacotes e cache do APT
-- Exibir métricas e estatísticas da atualização
-- Informar se o sistema requer reinicialização
+## Segurança
 
-### 4. Tornar Script Universal e executável
+O script executa comandos administrativos usando `sudo`. Revise o código do script para garantir que você entende todas as operações que ele realiza antes de executá-lo em seu sistema. O script foi projetado para automatizar tarefas de atualização padrão do Ubuntu e não deve realizar ações destrutivas, mas é sempre uma boa prática revisar scripts de terceiros antes de executá-los com privilégios administrativos.
 
-- a. Salvar o script (ex.: ubuntu_update.sh)
-- b. Tornar executável
-chmod +x ubuntu_update.sh
+---
 
-- c. Criar o diretório de log, se necessário
-mkdir -p ~/ubuntu/logs
-
-- d. Executar o script
-./ubuntu_update.sh
-
-- f. (Opcional) Mover para /usr/local/bin para acesso global
-sudo mv ubuntu_update.sh /usr/local/bin/ubuntu_update
-
+Este script foi criado para facilitar a manutenção de sistemas Ubuntu atualizados. Use-o por sua conta e risco. Sinta-se à vontade para contribuir com melhorias ou correções através de Pull Requests!
