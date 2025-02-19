@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Cores para melhorar a visualização
 RED='\033[0;31m'
@@ -15,7 +16,7 @@ TOTAL_REMOVED=0
 ERRORS_COUNT=0
 UPDATE_LOG="$HOME/.system-update.log"  # Mudado para o diretório home do usuário
 
-# Funções de exibição
+# Funções de exibição (sem alterações aqui)
 status_msg() {
     local msg="$1"
     printf "\n${BLUE}== [ %s ] ${NC}%s\n" "$(date +'%H:%M:%S')" "$msg"
@@ -86,25 +87,27 @@ try_step() {
     local MAX_RETRIES=${2:-1}
     local RETRY_DELAY=${3:-5}
     shift 3
+    local COMMAND="$@" # Salva o comando
 
-    status_msg "${STEP_DESC}..."
-    
+    status_msg "${STEP_DESC} (${COMMAND})..." # Mensagem mais informativa
+
     for ((i=1; i<=$MAX_RETRIES; i++)); do
-        if sudo timeout 300 "$@"; then  # Timeout de 5 minutos
-            success_msg "${STEP_DESC} concluído com sucesso!"
+        if sudo timeout 300 "$@" 2> >(tee -a "$UPDATE_LOG" >&2); then  # Captura stderr e loga
+            success_msg "${STEP_DESC} (${COMMAND}) concluído com sucesso!"
             return 0
         else
-            error_msg "Falha na tentativa $i/${MAX_RETRIES}: ${STEP_DESC}"
+            error_msg "Falha na tentativa $i/${MAX_RETRIES}: ${STEP_DESC} (${COMMAND})"
             if [ $i -lt $MAX_RETRIES ]; then
                 info_msg "Aguardando ${RETRY_DELAY} segundos antes de tentar novamente..."
                 sleep $RETRY_DELAY
             fi
         fi
     done
-    
-    error_msg "Falha crítica após ${MAX_RETRIES} tentativas: ${STEP_DESC}"
+
+    error_msg "Falha crítica após ${MAX_RETRIES} tentativas: ${STEP_DESC} (${COMMAND})"
     return 1
 }
+
 
 update_snap_packages() {
     if ! command -v snap &> /dev/null; then
@@ -113,11 +116,11 @@ update_snap_packages() {
 
     local SNAP_DIR="/var/lib/snapd/snaps"
     local SNAP_BEFORE_SIZE=$(safe_dir_size "$SNAP_DIR")
-    
+
     status_msg "Atualizando pacotes Snap"
     if sudo snap refresh; then
         success_msg "Atualização Snap concluída"
-        
+
         # Limpar snaps antigos
         info_msg "Removendo versões antigas de snaps..."
         local SNAPS_TO_REMOVE=$(snap list --all | awk '/disabled/{print $1, $3}')
@@ -126,7 +129,7 @@ update_snap_packages() {
                 sudo snap remove "$snap_name" --revision="$revision"
             fi
         done <<< "$SNAPS_TO_REMOVE"
-        
+
         local SNAP_AFTER_SIZE=$(safe_dir_size "$SNAP_DIR")
         local SNAP_DOWNLOADED=$((SNAP_AFTER_SIZE - SNAP_BEFORE_SIZE))
         TOTAL_DOWNLOADED=$((TOTAL_DOWNLOADED + SNAP_DOWNLOADED))
@@ -161,6 +164,15 @@ show_update_summary() {
     fi
 }
 
+check_held_packages() {
+    apt-get upgrade --dry-run | grep "held back"
+    if [ $? -eq 0 ]; then
+        warning_msg "Pacotes retidos encontrados. Considere investigar e resolver."
+        apt-get upgrade --dry-run | grep "held back" >> "$UPDATE_LOG" # Loga os pacotes retidos
+    fi
+}
+
+
 # Início do script
 clear
 printf "${BLUE}===============================================${NC}\n"
@@ -180,6 +192,7 @@ check_package_manager
 
 # Atualizações do sistema
 try_step "Atualizando lista de pacotes" 2 5 apt update -q
+check_held_packages # Verificação de pacotes retidos
 try_step "Recarregando unidades systemd" 1 2 systemctl daemon-reload
 
 # Atualização APT
@@ -201,13 +214,13 @@ update_snap_packages
 if command -v flatpak &> /dev/null; then
     FLATPAK_DIR="/var/lib/flatpak/repo/objects"
     [ -d "$FLATPAK_DIR" ] || FLATPAK_DIR="$HOME/.local/share/flatpak/repo/objects"
-    
+
     FLATPAK_BEFORE_SIZE=$(safe_dir_size "$FLATPAK_DIR")
-    
+
     if try_step "Atualizando aplicativos Flatpak" 3 10 flatpak update -y; then
         try_step "Limpando flatpaks não usados" 2 5 flatpak uninstall --unused -y
     fi
-    
+
     FLATPAK_AFTER_SIZE=$(safe_dir_size "$FLATPAK_DIR")
     FLATPAK_DOWNLOADED=$((FLATPAK_AFTER_SIZE - FLATPAK_BEFORE_SIZE))
     TOTAL_DOWNLOADED=$((TOTAL_DOWNLOADED + FLATPAK_DOWNLOADED))
